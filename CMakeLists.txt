@@ -13,10 +13,38 @@ option(STATIC_CHECK "Run static check" OFF)
 # set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_BUILD_TYPE Debug)
 
-## Check if pkg is built with ROS catkin
-if(CATKIN_DEVEL_PREFIX)
-    message(STATUS "Build package with catkin")
+
+########################################################################################
+####                  Detect ROS build system (IMPERFECT!)                         #####
+#### NOTE: The following code block detects whether catkin or ament CAN BE FOUND,  #####
+####       it does NOT guarantee the project is being built with catkin or ament.  #####
+########################################################################################
+
+# Try catkin first (ROS 1)
+find_package(catkin QUIET)
+# Try ament (ROS 2)
+find_package(ament_cmake QUIET)
+
+if(catkin_FOUND)
+    message(STATUS "Detected Catkin (ROS 1) build")
     set(BUILD_WITHOUT_ROS OFF)
+elseif(ament_cmake_FOUND)
+    message(STATUS "Detected Ament/Colcon (ROS 2) build")
+    set(BUILD_WITHOUT_ROS OFF)
+else()
+    message(STATUS "Detected raw CMake build")
+    set(BUILD_WITHOUT_ROS ON)
+endif()
+
+########################################################################################
+####                  END Detect ROS build system (IMPERFECT!)                     #####
+########################################################################################
+
+## Check if pkg is built with ROS catkin
+if(BUILD_WITHOUT_ROS)
+    message(STATUS "Build package with cmake")
+else()
+    message(STATUS "Build package with catkin")
     find_package(catkin REQUIRED)
     catkin_package(
         LIBRARIES ${PROJECT_NAME}
@@ -24,9 +52,6 @@ if(CATKIN_DEVEL_PREFIX)
         # CATKIN_DEPENDS async_port
         # DEPENDS system_lib
     )
-else()
-    message(STATUS "Build package with cmake")
-    set(BUILD_WITHOUT_ROS ON)    
 endif()
 
 ## Generate symbols for IDE indexer
